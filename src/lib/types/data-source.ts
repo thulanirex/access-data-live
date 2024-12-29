@@ -96,3 +96,7 @@ export interface Integration {
   isActive: boolean;
   lastSync?: Date;
 }
+
+export interface AccessPay {
+  
+}

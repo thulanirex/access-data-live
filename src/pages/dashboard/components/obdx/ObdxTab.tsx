@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useEffect, useState } from 'react';
 import { IconArrowUpRight } from "@tabler/icons-react";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, PieChart, Pie, Cell } from 'recharts';
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend } from 'recharts';
 
 interface TransactionStatus {
   pending: number;
@@ -122,7 +122,7 @@ const generateObdxData = (): ObdxMetrics => {
 
 const TransactionStatsTable = () => {
   const [liveData, setLiveData] = useState<ObdxMetrics>(generateObdxData());
-  const [historicalData, setHistoricalData] = useState<ObdxMetrics[]>([]);
+  const [, setHistoricalData] = useState<ObdxMetrics[]>([]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -140,7 +140,7 @@ const TransactionStatsTable = () => {
   };
 
   const transactions = Object.entries(liveData)
-    .filter(([key, value]) => key !== 'timestamp')
+    .filter(([key]) => key !== 'timestamp')
     .map(([key, value]) => ({
       id: key,
       name: key

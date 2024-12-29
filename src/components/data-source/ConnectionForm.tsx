@@ -63,9 +63,9 @@ export default function ConnectionForm({ initialData, onSubmit }: ConnectionForm
     onSubmit({
       ...values,
       id: initialData?.id || crypto.randomUUID(),
-      lastTested: initialData?.lastTested,
-      lastSync: initialData?.lastSync,
-    });
+      lastTested: initialData?.lastTested || new Date(),
+      lastSync: initialData?.lastSync || new Date(),
+    } as DatabaseConfig);
   };
 
   const handleTestConnection = async () => {

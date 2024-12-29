@@ -1,0 +1,9 @@
+FROM node:22.12.0-alpine
+
+WORKDIR /test
+
+# Create a simple package.json
+RUN echo '{"name": "test", "dependencies": {"express": "^4.18.2"}}' > package.json
+
+# Try to install a single package
+RUN npm install express --verbose
