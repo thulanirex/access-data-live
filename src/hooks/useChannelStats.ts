@@ -44,19 +44,39 @@ export function useChannelStats() {
   const nfsAnalytics = useNFSAnalytics({ startDate: today, endDate: today });
   const ussdAnalytics = useUSSDAnalytics({ startDate: today, endDate: today });
 
-  // Collect all analytics data in one place
+  // Collect all analytics data in one place, with error handling
   const analyticsData = useMemo(() => ({
-    accessPay: accessPay.data,
-    tengaMetrics: tengaAnalytics.channelMetrics,
-    mobileMetrics: mobileAnalytics.channelMetrics,
-    nfsData: nfsAnalytics.data,
-    ussdData: ussdAnalytics.data
+    accessPay: {
+      data: accessPay.data,
+      error: accessPay.error,
+      isLoading: accessPay.isLoading
+    },
+    tenga: {
+      data: tengaAnalytics.channelMetrics,
+      error: tengaAnalytics.error,
+      isLoading: tengaAnalytics.loading
+    },
+    mobile: {
+      data: mobileAnalytics.channelMetrics,
+      error: mobileAnalytics.error,
+      isLoading: mobileAnalytics.loading
+    },
+    nfs: {
+      data: nfsAnalytics.data,
+      error: nfsAnalytics.error,
+      isLoading: nfsAnalytics.isLoading
+    },
+    ussd: {
+      data: ussdAnalytics.data,
+      error: ussdAnalytics.error,
+      isLoading: ussdAnalytics.isLoading
+    }
   }), [
-    accessPay.data,
-    tengaAnalytics.channelMetrics,
-    mobileAnalytics.channelMetrics,
-    nfsAnalytics.data,
-    ussdAnalytics.data
+    accessPay.data, accessPay.error, accessPay.isLoading,
+    tengaAnalytics.channelMetrics, tengaAnalytics.error, tengaAnalytics.loading,
+    mobileAnalytics.channelMetrics, mobileAnalytics.error, mobileAnalytics.loading,
+    nfsAnalytics.data, nfsAnalytics.error, nfsAnalytics.isLoading,
+    ussdAnalytics.data, ussdAnalytics.error, ussdAnalytics.isLoading
   ]);
 
   useEffect(() => {
@@ -67,8 +87,8 @@ export function useChannelStats() {
       let activeChannels = 0;
 
       // Access Pay
-      if (analyticsData.accessPay) {
-        const { metrics } = analyticsData.accessPay;
+      if (!analyticsData.accessPay.error && analyticsData.accessPay.data) {
+        const { metrics } = analyticsData.accessPay.data;
         channels.push({
           id: 'accesspay',
           name: 'Access Pay',
@@ -85,8 +105,8 @@ export function useChannelStats() {
       }
 
       // Tenga
-      if (analyticsData.tengaMetrics.length > 0) {
-        const metrics = analyticsData.tengaMetrics[0];
+      if (!analyticsData.tenga.error && analyticsData.tenga.data.length > 0) {
+        const metrics = analyticsData.tenga.data[0];
         channels.push({
           id: 'tenga',
           name: 'Tenga',
@@ -103,8 +123,8 @@ export function useChannelStats() {
       }
 
       // Mobile Banking
-      if (analyticsData.mobileMetrics.length > 0) {
-        const metrics = analyticsData.mobileMetrics[0];
+      if (!analyticsData.mobile.error && analyticsData.mobile.data.length > 0) {
+        const metrics = analyticsData.mobile.data[0];
         channels.push({
           id: 'mobile',
           name: 'Mobile Banking',
@@ -121,8 +141,8 @@ export function useChannelStats() {
       }
 
       // NFS
-      if (analyticsData.nfsData?.metrics) {
-        const { metrics } = analyticsData.nfsData;
+      if (!analyticsData.nfs.error && analyticsData.nfs.data?.metrics) {
+        const { metrics } = analyticsData.nfs.data;
         channels.push({
           id: 'nfs',
           name: 'NFS',
@@ -139,8 +159,8 @@ export function useChannelStats() {
       }
 
       // USSD
-      if (analyticsData.ussdData?.metrics) {
-        const { metrics } = analyticsData.ussdData;
+      if (!analyticsData.ussd.error && analyticsData.ussd.data?.metrics) {
+        const { metrics } = analyticsData.ussd.data;
         channels.push({
           id: 'ussd',
           name: 'USSD *801#',
@@ -156,22 +176,41 @@ export function useChannelStats() {
         activeChannels++;
       }
 
-      const overallSuccessRate = totalTransactions > 0 
-        ? (totalSuccessful / totalTransactions) * 100 
-        : 0;
+      //USSD 202
 
-      setData({
-        channels,
-        totalTransactions,
-        overallSuccessRate,
-        activeChannels
-      });
-      setError(null);
+      //ATM
+
+      // Only set error if ALL services failed
+      const allServicesFailed = Object.values(analyticsData).every(service => service.error);
+      if (allServicesFailed) {
+        setError(new Error('All services are currently unavailable'));
+      } else {
+        setError(null);
+      }
+
+      // Set data even if some services failed
+      if (channels.length > 0) {
+        const overallSuccessRate = totalTransactions > 0 
+          ? (totalSuccessful / totalTransactions) * 100 
+          : 0;
+
+        setData({
+          channels,
+          totalTransactions,
+          overallSuccessRate,
+          activeChannels
+        });
+      }
     } catch (err) {
       console.error('Error processing channel stats:', err);
       setError(err as Error);
     } finally {
-      setIsLoading(false);
+      // Only consider loading complete when all non-errored services are done loading
+      const isStillLoading = Object.values(analyticsData)
+        .filter(service => !service.error)
+        .some(service => service.isLoading);
+      
+      setIsLoading(isStillLoading);
     }
   }, [analyticsData]);
 
@@ -185,18 +224,8 @@ export function useChannelStats() {
 
   return {
     data,
-    isLoading: isLoading || 
-               accessPay.isLoading || 
-               tengaAnalytics.loading || 
-               mobileAnalytics.loading || 
-               nfsAnalytics.isLoading || 
-               ussdAnalytics.isLoading,
-    error: error || 
-           accessPay.error || 
-           tengaAnalytics.error || 
-           mobileAnalytics.error || 
-           nfsAnalytics.error || 
-           ussdAnalytics.error,
+    isLoading: Object.values(analyticsData).every(service => service.isLoading),
+    error: Object.values(analyticsData).every(service => service.error) ? error : null,
     refetch
   };
 }
