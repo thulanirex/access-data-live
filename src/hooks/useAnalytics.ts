@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react';
 import { ApiResponse, SuccessFailureData, ChannelMetrics, TransactionTypeMetrics } from '../types/api';
-import { fetchAnalyticsData } from '../services/analyticsService';
 
 interface UseAnalyticsProps {
     startDate: string;
     endDate: string;
-    channel?: string;
+    channel?: 'TENGA' | 'MOBILE';
     refreshInterval?: number;
 }
 
@@ -29,79 +28,46 @@ export const useAnalytics = ({
     const [data, setData] = useState<ApiResponse | null>(null);
 
     const transformToSuccessFailureData = (apiData: ApiResponse): SuccessFailureData[] => {
-        const channelData = apiData.channelsData.find(ch => 
-            channel === 'MOBILE' 
-                ? ch.CHANNEL.includes('Mobile Banking')
-                : ch.CHANNEL.includes('Tenga Wallet')
-        );
-
-        if (!channelData) return [];
-
-        const totalSuccess = channelData.DATA.reduce((acc, curr) => acc + curr.SUCCESS, 0);
-        const totalFailed = channelData.DATA.reduce((acc, curr) => acc + curr.FAILED, 0);
-        const total = totalSuccess + totalFailed;
+        if (!apiData) return [];
         
-        const successRate = total > 0 ? (totalSuccess / total) * 100 : 0;
-        const failureRate = total > 0 ? (totalFailed / total) * 100 : 0;
-
         return [
             {
                 name: 'Success',
-                value: successRate,
-                percent: successRate
+                value: apiData.success,
+                percent: apiData.percentSuccess
             },
             {
                 name: 'Failure',
-                value: failureRate,
-                percent: failureRate
+                value: apiData.failed,
+                percent: apiData.percentFailed
             }
         ];
     };
 
     const calculateChannelMetrics = (apiData: ApiResponse): ChannelMetrics[] => {
-        const channelData = apiData.channelsData.find(ch => 
-            channel === 'MOBILE' 
-                ? ch.CHANNEL.includes('Mobile Banking')
-                : ch.CHANNEL.includes('Tenga Wallet')
-        );
-
-        if (!channelData) return [];
-
-        const metrics = channelData.DATA.reduce(
-            (acc, curr) => {
-                acc.successCount += curr.SUCCESS;
-                acc.failureCount += curr.FAILED;
-                acc.totalTransactions += curr.TOTAL;
-                return acc;
-            },
-            { successCount: 0, failureCount: 0, totalTransactions: 0 }
-        );
+        if (!apiData) return [];
 
         return [{
-            channel: channelData.CHANNEL,
-            ...metrics,
-            successRate: metrics.totalTransactions > 0 
-                ? (metrics.successCount / metrics.totalTransactions) * 100 
-                : 0
+            channel: apiData.channel,
+            successCount: apiData.success,
+            failureCount: apiData.failed,
+            totalTransactions: apiData.total,
+            successRate: apiData.percentSuccess
         }];
     };
 
     const getTransactionTypeMetrics = (apiData: ApiResponse): TransactionTypeMetrics[] => {
-        const channelData = apiData.channelsData.find(ch => 
-            channel === 'MOBILE' 
-                ? ch.CHANNEL.includes('Mobile Banking')
-                : ch.CHANNEL.includes('Tenga Wallet')
-        );
+        if (!apiData?.detailReport) return [];
 
-        if (!channelData) return [];
-
-        return channelData.DATA.map(transaction => ({
-            type: transaction.FTTYPE,
-            channel: channelData.CHANNEL,
-            successCount: transaction.SUCCESS,
-            failureCount: transaction.FAILED,
-            total: transaction.TOTAL,
-            successRate: transaction.PERCENT_SUCCESS
+        return apiData.detailReport.map(transaction => ({
+            type: transaction.TRANSACTION_TYPE,
+            channel: apiData.channel,
+            successCount: transaction.SUCCESSFUL_TRANSACTIONS,
+            failureCount: transaction.FAILED_TRANSACTIONS,
+            total: transaction.TOTAL_TRANSACTIONS,
+            successRate: transaction.TOTAL_TRANSACTIONS > 0 
+                ? (transaction.SUCCESSFUL_TRANSACTIONS / transaction.TOTAL_TRANSACTIONS) * 100 
+                : 0
         }));
     };
 
@@ -109,10 +75,22 @@ export const useAnalytics = ({
         try {
             setLoading(true);
             setError(null);
-            // Always use TENGA as channel_name in API call
-            const response = await fetchAnalyticsData(startDate, endDate, 'TENGA');
-            setData(response);
+            
+            // Map channel names to API parameters
+            const channelParam = channel === 'MOBILE' ? 'mobile_banking' : 'tenga';
+            
+            const response = await fetch(
+                `http://10.160.43.209:5000/api/v1/access_data_analytic/?start_timestamp=${startDate}&end_timestamp=${endDate}&channel_name=${channelParam}`
+            );
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const jsonData = await response.json();
+            setData(jsonData);
         } catch (err) {
+            console.error('Error fetching analytics data:', err);
             setError(err instanceof Error ? err : new Error('Failed to fetch analytics data'));
         } finally {
             setLoading(false);
@@ -126,7 +104,7 @@ export const useAnalytics = ({
             const interval = setInterval(fetchData, refreshInterval);
             return () => clearInterval(interval);
         }
-    }, [startDate, endDate, refreshInterval]);
+    }, [startDate, endDate, channel, refreshInterval]);
 
     return {
         loading,

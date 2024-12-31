@@ -77,7 +77,7 @@ export default function Sidebar2({
             <div
               className={`flex flex-col justify-end truncate ${isCollapsed ? 'invisible w-0' : 'visible w-auto'}`}
             >
-              <span className='font-medium'>Access Bank Zambia</span>
+              <span className='font-medium'>Access Bank PLC</span>
               <span className='text-xs'>Service Management Data Explorer</span>
             </div>
           </div>

@@ -4,6 +4,11 @@ import { useAccessPayAnalytics } from './useAccessPayAnalytics';
 import { useAnalytics } from './useAnalytics';
 import { useNFSAnalytics } from './useNFSAnalytics';
 import { useUSSDAnalytics } from './useUSSDAnalytics';
+import { useUSSD202Analytics } from './useUSSD202Analytics';
+import { useRIBAnalytics } from './useRIBAnalytics';
+import { useATMAnalytics } from './useATMAnalytics';
+import { useAgencyBankingAnalytics } from './useAgencyBankingAnalytics';
+import { useUSSD360Analytics } from './useUSSD360Analytics';
 
 export interface ChannelStatus {
   id: string;
@@ -43,7 +48,11 @@ export function useChannelStats() {
   });
   const nfsAnalytics = useNFSAnalytics({ startDate: today, endDate: today });
   const ussdAnalytics = useUSSDAnalytics({ startDate: today, endDate: today });
-
+  const ussd202Analytics = useUSSD202Analytics({ startDate: today, endDate: today });
+  const ribAnalytics = useRIBAnalytics({ startDate: today, endDate: today });
+  const atmAnalytics = useATMAnalytics({ startDate: today, endDate: today });
+  const agencyBanking = useAgencyBankingAnalytics({ startDate: today, endDate: today }); 
+  const ussd360Analytics = useUSSD360Analytics({ startDate: today, endDate: today });
   // Collect all analytics data in one place, with error handling
   const analyticsData = useMemo(() => ({
     accessPay: {
@@ -70,13 +79,43 @@ export function useChannelStats() {
       data: ussdAnalytics.data,
       error: ussdAnalytics.error,
       isLoading: ussdAnalytics.isLoading
+    },
+    ussd202: {
+      data: ussd202Analytics.data,
+      error: ussd202Analytics.error,
+      isLoading: ussd202Analytics.isLoading
+    },
+    rib: {
+      data: ribAnalytics.data,
+      error: ribAnalytics.error,
+      isLoading: ribAnalytics.isLoading
+    },
+    atm: {
+      data: atmAnalytics.data,
+      error: atmAnalytics.error,
+      isLoading: atmAnalytics.isLoading
+    },
+    agencyBanking: {
+      data: agencyBanking.data,
+      error: agencyBanking.error,
+      isLoading: agencyBanking.isLoading
+    },
+    ussd360: {
+      data: ussd360Analytics.data,
+      error: ussd360Analytics.error,
+      isLoading: ussd360Analytics.isLoading
     }
   }), [
     accessPay.data, accessPay.error, accessPay.isLoading,
     tengaAnalytics.channelMetrics, tengaAnalytics.error, tengaAnalytics.loading,
     mobileAnalytics.channelMetrics, mobileAnalytics.error, mobileAnalytics.loading,
     nfsAnalytics.data, nfsAnalytics.error, nfsAnalytics.isLoading,
-    ussdAnalytics.data, ussdAnalytics.error, ussdAnalytics.isLoading
+    ussdAnalytics.data, ussdAnalytics.error, ussdAnalytics.isLoading,
+    ussd202Analytics.data, ussd202Analytics.error, ussd202Analytics.isLoading,
+    ribAnalytics.data, ribAnalytics.error, ribAnalytics.isLoading,
+    atmAnalytics.data, atmAnalytics.error, atmAnalytics.isLoading,
+    agencyBanking.data, agencyBanking.error, agencyBanking.isLoading,
+    ussd360Analytics.data, ussd360Analytics.error, ussd360Analytics.isLoading
   ]);
 
   useEffect(() => {
@@ -126,7 +165,7 @@ export function useChannelStats() {
       if (!analyticsData.mobile.error && analyticsData.mobile.data.length > 0) {
         const metrics = analyticsData.mobile.data[0];
         channels.push({
-          id: 'mobile',
+          id: 'mobile_banking',
           name: 'Mobile Banking',
           status: metrics.successRate >= 90 ? 'operational' : metrics.successRate >= 70 ? 'degraded' : 'down',
           successRate: metrics.successRate,
@@ -139,6 +178,78 @@ export function useChannelStats() {
         totalSuccessful += metrics.successCount;
         activeChannels++;
       }
+
+     //Retail Internet Banking
+      if (!analyticsData.rib.error && analyticsData.rib.data) {
+        channels.push({
+          id: 'rib',
+          name: 'Retail Internet Banking',
+          status: analyticsData.rib.data.percentSuccess >= 90 
+            ? 'operational' 
+            : analyticsData.rib.data.percentSuccess >= 70 
+              ? 'degraded' 
+              : 'down',
+          successRate: analyticsData.rib.data.percentSuccess,
+          totalTransactions: analyticsData.rib.data.total,
+          successfulTransactions: analyticsData.rib.data.success,
+          failedTransactions: analyticsData.rib.data.failed,
+          lastUpdated: new Date().toISOString()
+        });
+        totalTransactions += analyticsData.rib.data.total;
+        totalSuccessful += analyticsData.rib.data.success;
+        activeChannels++;
+      }
+     
+      //ATM 
+      if (!atmAnalytics.error && atmAnalytics.data) {
+        channels.push({
+            id: 'atm',
+            name: 'ATM',
+            status: getChannelStatus(atmAnalytics.data.percentSuccess),
+            successRate: atmAnalytics.data.percentSuccess,
+            totalTransactions: atmAnalytics.data.total,
+            successfulTransactions: atmAnalytics.data.success,
+            failedTransactions: atmAnalytics.data.failed,
+            lastUpdated: new Date().toISOString()
+        });
+        totalTransactions += atmAnalytics.data.total;
+        totalSuccessful += atmAnalytics.data.success;
+        activeChannels++;
+    }
+
+    //Agency Banking
+    if (!agencyBanking.error && agencyBanking.data) {
+        channels.push({
+            id: 'agency_banking',
+            name: 'Agency Banking',
+            status: getChannelStatus(agencyBanking.data.percentSuccess),
+            successRate: agencyBanking.data.percentSuccess,
+            totalTransactions: agencyBanking.data.total,
+            successfulTransactions: agencyBanking.data.success,
+            failedTransactions: agencyBanking.data.failed,
+            lastUpdated: new Date().toISOString()
+        });
+        totalTransactions += agencyBanking.data.total;
+        totalSuccessful += agencyBanking.data.success;
+        activeChannels++;
+    }
+
+    //USSD 360
+    if (!ussd360Analytics.error && ussd360Analytics.data) {
+        channels.push({
+            id: 'ussd360',
+            name: 'USSD *360#',
+            status: getChannelStatus(ussd360Analytics.data.percentSuccess),
+            successRate: ussd360Analytics.data.percentSuccess,
+            totalTransactions: ussd360Analytics.data.total,
+            successfulTransactions: ussd360Analytics.data.success,
+            failedTransactions: ussd360Analytics.data.failed,
+            lastUpdated: new Date().toISOString()
+        });
+        totalTransactions += ussd360Analytics.data.total;
+        totalSuccessful += ussd360Analytics.data.success;
+        activeChannels++;
+    }
 
       // NFS
       if (!analyticsData.nfs.error && analyticsData.nfs.data?.metrics) {
@@ -158,6 +269,7 @@ export function useChannelStats() {
         activeChannels++;
       }
 
+   
       // USSD
       if (!analyticsData.ussd.error && analyticsData.ussd.data?.metrics) {
         const { metrics } = analyticsData.ussd.data;
@@ -176,9 +288,26 @@ export function useChannelStats() {
         activeChannels++;
       }
 
-      //USSD 202
-
-      //ATM
+      // USSD 202
+      if (!analyticsData.ussd202.error && analyticsData.ussd202.data) {
+        channels.push({
+          id: 'ussd202',
+          name: 'USSD *202#',
+          status: analyticsData.ussd202.data.percentSuccess >= 90 
+            ? 'operational' 
+            : analyticsData.ussd202.data.percentSuccess >= 70 
+              ? 'degraded' 
+              : 'down',
+          successRate: analyticsData.ussd202.data.percentSuccess,
+          totalTransactions: analyticsData.ussd202.data.total,
+          successfulTransactions: analyticsData.ussd202.data.success,
+          failedTransactions: analyticsData.ussd202.data.failed,
+          lastUpdated: new Date().toISOString()
+        });
+        totalTransactions += analyticsData.ussd202.data.total;
+        totalSuccessful += analyticsData.ussd202.data.success;
+        activeChannels++;
+      }
 
       // Only set error if ALL services failed
       const allServicesFailed = Object.values(analyticsData).every(service => service.error);
@@ -220,7 +349,21 @@ export function useChannelStats() {
     mobileAnalytics.refetch();
     nfsAnalytics.refetch();
     ussdAnalytics.refetch();
-  }, []);
+    ussd202Analytics.refetch();
+    ribAnalytics.refetch();
+    atmAnalytics.refetch();
+    agencyBanking.refetch();
+  }, [
+    accessPay.refetch,
+    tengaAnalytics.refetch,
+    mobileAnalytics.refetch,
+    nfsAnalytics.refetch,
+    ussdAnalytics.refetch,
+    ussd202Analytics.refetch,
+    ribAnalytics.refetch,
+    atmAnalytics.refetch,
+    agencyBanking.refetch
+  ]);
 
   return {
     data,
@@ -228,4 +371,11 @@ export function useChannelStats() {
     error: Object.values(analyticsData).every(service => service.error) ? error : null,
     refetch
   };
+
+  function getChannelStatus(successRate: number): 'operational' | 'degraded' | 'down' {
+    if (successRate >= 90) return 'operational';
+    if (successRate >= 70) return 'degraded';
+    return 'down';
+}
+
 }

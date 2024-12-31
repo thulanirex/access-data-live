@@ -4,7 +4,7 @@ import useLocalStorage from './use-local-storage'
 export default function useIsCollapsed() {
   const [isCollapsed, setIsCollapsed] = useLocalStorage({
     key: 'collapsed-sidebar',
-    defaultValue: false,
+    defaultValue: true,
   })
 
   useEffect(() => {

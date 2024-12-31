@@ -25,43 +25,43 @@ export const sidelinks: SideLink[] = [
     href: '/',
     icon: <IconLayoutDashboard size={18} />,
   },
-  {
-    title: 'Service Management Dashboard',
-    label: '',
-    href: '/incidents',
-    icon: <IconChecklist size={18} />,
-  },
-  {
-    title: 'Reporting',
-    label: '',
-    href: '/reports',
-    icon: <IconChecklist size={18} />,
-  },
+  // {
+  //   title: 'Service Management Dashboard',
+  //   label: '',
+  //   href: '/incidents',
+  //   icon: <IconChecklist size={18} />,
+  // },
+  // {
+  //   title: 'Reporting',
+  //   label: '',
+  //   href: '/reports',
+  //   icon: <IconChecklist size={18} />,
+  // },
   
-  {
-    title: 'AI Assistant',
-    label: '',
-    href: '/ai-assistant',
-    icon: <IconMessages size={18} />,
-  },
-  {
-    title: 'Dashboard Builder',
-    label: '',
-    href: '/dashboard-builder',
-    icon: <IconSettings size={18} />,
-  },
-    {
-    title: 'Workflows',
-    label: '',
-    href: '/workflows',
-    icon: <IconArrowFork size={18} />,
-  },
-  {
-    title: 'Apps',
-    label: '',
-    href: '/apps',
-    icon: <IconApps size={18} />,
-  },
+  // {
+  //   title: 'AI Assistant',
+  //   label: '',
+  //   href: '/ai-assistant',
+  //   icon: <IconMessages size={18} />,
+  // },
+  // {
+  //   title: 'Dashboard Builder',
+  //   label: '',
+  //   href: '/dashboard-builder',
+  //   icon: <IconSettings size={18} />,
+  // },
+  //   {
+  //   title: 'Workflows',
+  //   label: '',
+  //   href: '/workflows',
+  //   icon: <IconArrowFork size={18} />,
+  // },
+  // {
+  //   title: 'Apps',
+  //   label: '',
+  //   href: '/apps',
+  //   icon: <IconApps size={18} />,
+  // },
   // {
   //   title: 'Authentication',
   //   label: '',
@@ -164,10 +164,10 @@ export const sidelinks: SideLink[] = [
   //     },
   //   ],
   // },
-  {
-    title: 'Settings',
-    label: '',
-    href: '/settings',
-    icon: <IconSettings size={18} />,
-  },
+  // {
+  //   title: 'Settings',
+  //   label: '',
+  //   href: '/settings',
+  //   icon: <IconSettings size={18} />,
+  // },
 ]
