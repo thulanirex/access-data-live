@@ -1,19 +1,27 @@
-// src/pages/dashboard/components/accesspay/AccessPayMetricsCards.tsx
 import { Card } from "@/components/ui/card";
-import { ArrowDownIcon, ArrowUpIcon, ActivityIcon, CheckCircleIcon, XCircleIcon, PercentIcon } from "lucide-react";
+import { 
+    ActivityIcon, 
+    ArrowDownIcon, 
+    ArrowUpIcon, 
+    CheckCircleIcon, 
+    ClockIcon, 
+    PercentIcon, 
+    XCircleIcon 
+} from "lucide-react";
 
 interface AccessPayMetricsCardsProps {
     data: {
         totalTransactions: number;
         successfulTransactions: number;
         failedTransactions: number;
+        pendingTransactions: number;
         successRate: number;
     };
 }
 
 export default function AccessPayMetricsCards({ data }: AccessPayMetricsCardsProps) {
     return (
-        <div className="grid gap-6 grid-cols-1 md:grid-cols-4">
+        <div className="grid gap-6 grid-cols-1 md:grid-cols-5">
             <Card className="p-6 relative overflow-hidden">
                 <div className="flex flex-col gap-1">
                     <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -61,7 +69,7 @@ export default function AccessPayMetricsCards({ data }: AccessPayMetricsCardsPro
                 <div className="flex flex-col gap-1">
                     <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                         <CheckCircleIcon className="w-4 h-4" />
-                        Successful
+                        Finalized
                     </span>
                     <span className="text-2xl font-bold tabular-nums text-emerald-600">
                         {data.successfulTransactions.toLocaleString()}
@@ -84,6 +92,21 @@ export default function AccessPayMetricsCards({ data }: AccessPayMetricsCardsPro
                 </div>
                 <div className="absolute bottom-0 right-0 p-4 opacity-10">
                     <XCircleIcon className="w-12 h-12" />
+                </div>
+            </Card>
+
+            <Card className="p-6 relative overflow-hidden">
+                <div className="flex flex-col gap-1">
+                    <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                        <ClockIcon className="w-4 h-4" />
+                        Pending
+                    </span>
+                    <span className="text-2xl font-bold tabular-nums text-yellow-600">
+                        {data.pendingTransactions.toLocaleString()}
+                    </span>
+                </div>
+                <div className="absolute bottom-0 right-0 p-4 opacity-10">
+                    <ClockIcon className="w-12 h-12" />
                 </div>
             </Card>
         </div>

@@ -28,14 +28,21 @@ export interface ChannelStatsResponse {
   activeChannels: number;
 }
 
+
+
+
 export function useChannelStats() {
   const [data, setData] = useState<ChannelStatsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   const today = useMemo(() => format(new Date(), 'dd-MMM-yyyy').toUpperCase(), []);
+//   const accessDate = useMemo(() => new Date(), []);
 
-  const accessPay = useAccessPayAnalytics(today, today);
+//   const accessPay = useAccessPayAnalytics({
+//     startDate: accessDate,
+//     endDate: accessDate
+// });
   const tengaAnalytics = useAnalytics({
     startDate: today,
     endDate: today,
@@ -55,11 +62,11 @@ export function useChannelStats() {
   const ussd360Analytics = useUSSD360Analytics({ startDate: today, endDate: today });
   // Collect all analytics data in one place, with error handling
   const analyticsData = useMemo(() => ({
-    accessPay: {
-      data: accessPay.data,
-      error: accessPay.error,
-      isLoading: accessPay.isLoading
-    },
+    // accessPay: {
+    //   data: accessPay.data,
+    //   error: accessPay.error,
+    //   isLoading: accessPay.isLoading
+    // },
     tenga: {
       data: tengaAnalytics.channelMetrics,
       error: tengaAnalytics.error,
@@ -106,7 +113,7 @@ export function useChannelStats() {
       isLoading: ussd360Analytics.isLoading
     }
   }), [
-    accessPay.data, accessPay.error, accessPay.isLoading,
+    // accessPay.data, accessPay.error, accessPay.isLoading,
     tengaAnalytics.channelMetrics, tengaAnalytics.error, tengaAnalytics.loading,
     mobileAnalytics.channelMetrics, mobileAnalytics.error, mobileAnalytics.loading,
     nfsAnalytics.data, nfsAnalytics.error, nfsAnalytics.isLoading,
@@ -124,25 +131,64 @@ export function useChannelStats() {
       let totalTransactions = 0;
       let totalSuccessful = 0;
       let activeChannels = 0;
+ 
+// if (!accessPay.error) {
+//   const detailReport = accessPay.data.serviceData;
+//   console.log('AccessPay Detail Report:', detailReport); // Debug log
+//   const metrics = accessPay.data.metrics;
+//   console.log('AccessPay Metrics:', metrics); // Debug log
 
-      // Access Pay
-      if (!analyticsData.accessPay.error && analyticsData.accessPay.data) {
-        const { metrics } = analyticsData.accessPay.data;
-        channels.push({
-          id: 'accesspay',
-          name: 'Access Pay',
-          status: metrics.successRate >= 90 ? 'operational' : metrics.successRate >= 70 ? 'degraded' : 'down',
-          successRate: metrics.successRate,
-          totalTransactions: metrics.totalTransactions,
-          successfulTransactions: metrics.successfulTransactions,
-          failedTransactions: metrics.failedTransactions,
-          lastUpdated: new Date().toISOString()
-        });
-        totalTransactions += metrics.totalTransactions;
-        totalSuccessful += metrics.successfulTransactions;
-        activeChannels++;
-      }
+//   // Calculate totals from detail report
+//   const accessPayMetrics = Array.isArray(metrics) ? metrics.reduce((acc, item) => {
+//       // Debug log for each item
+//       console.timeLog('processing single item');
+//       console.log('Processing item:', {
+//           bankType: item.BANK_TYPE_DESCRIPTION,
+//           status: item.STATUS_DESCRIPTION,
+//           total: item.TRANSACTION_COUNT,
+//           finalized: item.FINALIZED_TRANSACTIONS,
+//           failed: item.FAILED_TRANSACTIONS,
+//           pending: item.PENDING_TRANSACTIONS
+//       });
 
+//       return {
+//           total: acc.total + Number(item.TRANSACTION_COUNT),
+//           finalized: acc.finalized + Number(item.FINALIZED_TRANSACTIONS),
+//           failed: acc.failed + Number(item.FAILED_TRANSACTIONS),
+//           pending: acc.pending + Number(item.PENDING_TRANSACTIONS)
+//       };
+//   }, { total: 0, finalized: 0, failed: 0, pending: 0 }) : { total: 0, finalized: 0, failed: 0, pending: 0 };;
+
+//   console.log('AccessPay Metrics Calculated:', accessPayMetrics); // Debug log
+
+//   // Calculate success rate (considering all transactions)
+//   const successRate = accessPayMetrics.total > 0 
+//       ? (accessPayMetrics.finalized / accessPayMetrics.total) * 100 
+//       : 0;
+
+//   console.log('AccessPay Success Rate:', successRate); // Debug log
+
+//   channels.push({
+//       id: 'accesspay',
+//       name: 'Access Pay',
+//       status: getChannelStatus(successRate),
+//       successRate: Number(successRate.toFixed(2)),
+//       totalTransactions: accessPayMetrics.total,
+//       successfulTransactions: accessPayMetrics.finalized,
+//       failedTransactions: accessPayMetrics.failed,
+//       lastUpdated: new Date().toISOString()
+//   });
+
+//   // Update global totals
+//   totalTransactions += accessPayMetrics.total;
+//   totalSuccessful += accessPayMetrics.finalized;
+//   activeChannels++;
+
+//   console.log('AccessPay Channel Data:', channels[channels.length - 1]); // Debug log
+// }
+
+// ... rest of the code ...
+       
       // Tenga
       if (!analyticsData.tenga.error && analyticsData.tenga.data.length > 0) {
         const metrics = analyticsData.tenga.data[0];
@@ -213,6 +259,7 @@ export function useChannelStats() {
             lastUpdated: new Date().toISOString()
         });
         totalTransactions += atmAnalytics.data.total;
+
         totalSuccessful += atmAnalytics.data.success;
         activeChannels++;
     }
@@ -344,7 +391,7 @@ export function useChannelStats() {
   }, [analyticsData]);
 
   const refetch = useCallback(() => {
-    accessPay.refetch();
+    // accessPay.refetch();
     tengaAnalytics.refetch();
     mobileAnalytics.refetch();
     nfsAnalytics.refetch();
@@ -354,7 +401,7 @@ export function useChannelStats() {
     atmAnalytics.refetch();
     agencyBanking.refetch();
   }, [
-    accessPay.refetch,
+    // accessPay.refetch,
     tengaAnalytics.refetch,
     mobileAnalytics.refetch,
     nfsAnalytics.refetch,

@@ -105,3 +105,21 @@ export interface USSD360Response {
   success: number;
   total: number;
 }
+export interface AccessPayDetailReport {
+  BANK_TYPE_DESCRIPTION: string;
+  FAILED_RATE: number;
+  FAILED_TRANSACTIONS: number;
+  FINALIZED_RATE: number;
+  FINALIZED_TRANSACTIONS: number;
+  PENDING_RATE: number;
+  PENDING_TRANSACTIONS: number;
+  STATUS_DESCRIPTION: string;
+  TRANSACTION_COUNT: number;
+}
+
+export interface AccessPayResponse {
+  channel: string;
+  detailReport: AccessPayDetailReport[];
+  statusCode: number;
+  timestamp: string;
+}
