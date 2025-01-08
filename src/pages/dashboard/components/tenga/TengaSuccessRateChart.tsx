@@ -8,7 +8,7 @@ interface TengaSuccessRateChartProps {
 export default function TengaSuccessRateChart({ data }: TengaSuccessRateChartProps) {
     // Calculate total success and failure from wallet transactions
     const walletMetrics = data
-        .filter(t => t.type.toLowerCase().includes('wallet'))
+        .filter(t => t.type.toLowerCase())
         .reduce(
             (acc, curr) => {
                 acc.success += curr.successCount;

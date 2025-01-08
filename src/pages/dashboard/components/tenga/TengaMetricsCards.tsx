@@ -11,7 +11,7 @@ interface TengaMetricsCardsProps {
 
 const TengaMetricsCards: React.FC<TengaMetricsCardsProps> = ({ loading, metrics, transactions }) => {
     // Filter and aggregate wallet transactions
-    const walletMetrics = transactions?.filter(t => t.type.toLowerCase().includes('wallet'))
+    const walletMetrics = transactions?.filter(t => t.type.toLowerCase())
         .reduce((acc, curr) => {
             acc.total += curr.total;
             acc.success += curr.successCount;

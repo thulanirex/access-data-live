@@ -8,12 +8,12 @@ interface TengaTrendAnalysisProps {
 export default function TengaTrendAnalysis({ data }: TengaTrendAnalysisProps) {
     // Filter wallet transactions and sort by type
     const walletTransactions = data
-        .filter(t => t.type.toLowerCase().includes('wallet'))
+        .filter(t => t.type.toLowerCase())
         .sort((a, b) => b.total - a.total);
 
     // Transform data for the line chart
     const chartData = walletTransactions.map(transaction => ({
-        name: transaction.type.replace('WALLET', '').trim(), // Clean up the name
+        name: transaction.type, // Clean up the name
         Total: transaction.total,
         Success: transaction.successCount,
         Failure: transaction.failureCount,

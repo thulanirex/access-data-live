@@ -22,6 +22,7 @@ interface AccessPayApiResponse {
 
 interface ProcessedData {
     metrics: {
+        [x: string]: any;
         totalTransactions: number;
         successfulTransactions: number;
         failedTransactions: number;

@@ -56,7 +56,7 @@ const TengaTransactionTypesChart: React.FC<TengaTransactionTypesChartProps> = ({
 
     // Filter wallet transactions and sort by type
     const walletTransactions = data
-        .filter(t => t.type.toLowerCase().includes('wallet'))
+        .filter(t => t.type.toLowerCase())
         .sort((a, b) => b.total - a.total);
 
     // Transform data for the line chart

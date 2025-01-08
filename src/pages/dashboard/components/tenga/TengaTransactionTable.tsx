@@ -16,7 +16,7 @@ interface TengaTransactionTableProps {
 export default function TengaTransactionTable({ data }: TengaTransactionTableProps) {
     // Filter and sort wallet transactions
     const walletTransactions = data
-        .filter(t => t.type.toLowerCase().includes('wallet'))
+        .filter(t => t.type.toLowerCase())
         .sort((a, b) => b.total - a.total);
 
     return (
@@ -36,7 +36,7 @@ export default function TengaTransactionTable({ data }: TengaTransactionTablePro
                     {walletTransactions.map((transaction) => (
                         <TableRow key={transaction.type}>
                             <TableCell className="font-medium">
-                                {transaction.type.replace('WALLET', '').trim()}
+                                {transaction.type}
                             </TableCell>
                             <TableCell className="text-right">
                                 {transaction.total.toLocaleString()}
