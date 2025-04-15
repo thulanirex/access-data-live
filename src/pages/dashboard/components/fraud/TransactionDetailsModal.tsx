@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Fragment } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -18,8 +18,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, AlertTriangle, Download, FileText } from "lucide-react";
+import { Loader2, AlertTriangle, Download, FileText, User } from "lucide-react";
 import { format } from 'date-fns';
+import Customer360Modal from './Customer360Modal';
 
 export interface TransactionDetail {
     module: string;
@@ -72,6 +73,7 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
     const [activeTab, setActiveTab] = useState('all');
     const [formattedStartDate, setFormattedStartDate] = useState('');
     const [formattedEndDate, setFormattedEndDate] = useState('');
+    const [isCustomer360Open, setIsCustomer360Open] = useState(false);
 
     useEffect(() => {
         if (isOpen && customerId) {
@@ -255,223 +257,234 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                        <span>Transaction Details</span>
-                        {flagDetails && (
-                            <Badge variant="outline" className="ml-2">
-                                Flagged
-                            </Badge>
-                        )}
-                    </DialogTitle>
-                    <DialogDescription>
-                        <div className="flex flex-col gap-1">
-                            <p>Customer: <strong>{customerName}</strong> (ID: {customerId})</p>
-                            <p>Period: <strong>{formatDate(formattedStartDate)}</strong> to <strong>{formatDate(formattedEndDate)}</strong> (30-minute window)</p>
+        <Fragment>
+            <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <span>Transaction Details</span>
                             {flagDetails && (
-                                <div className="flex items-center mt-2 p-2 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md">
-                                    <AlertTriangle className="h-4 w-4 text-amber-500 mr-2" />
-                                    <span className="text-amber-700 dark:text-amber-300 text-sm">{flagDetails}</span>
-                                </div>
+                                <Badge variant="outline" className="ml-2">
+                                    Flagged
+                                </Badge>
                             )}
+                        </DialogTitle>
+                        <DialogDescription>
+                            <div className="flex flex-col gap-1">
+                                <p>Customer: <strong>{customerName}</strong> (ID: {customerId})</p>
+                                <p>Period: <strong>{formatDate(formattedStartDate)}</strong> to <strong>{formatDate(formattedEndDate)}</strong> (30-minute window)</p>
+                                {flagDetails && (
+                                    <div className="flex items-center mt-2 p-2 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md">
+                                        <AlertTriangle className="h-4 w-4 text-amber-500 mr-2" />
+                                        <span className="text-amber-700 dark:text-amber-300 text-sm">{flagDetails}</span>
+                                    </div>
+                                )}
+                                <Button variant="outline" size="sm" onClick={() => setIsCustomer360Open(true)}>
+                                    <User className="h-4 w-4 mr-2" />
+                                    View Customer 360°
+                                </Button>
+                            </div>
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {loading ? (
+                        <div className="flex justify-center items-center py-12">
+                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                            <span className="ml-2">Loading transaction details...</span>
                         </div>
-                    </DialogDescription>
-                </DialogHeader>
-
-                {loading ? (
-                    <div className="flex justify-center items-center py-12">
-                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                        <span className="ml-2">Loading transaction details...</span>
-                    </div>
-                ) : error ? (
-                    <div className="p-4 text-red-500 bg-red-50 dark:bg-red-950 rounded-md">
-                        Error loading transaction details: {error}
-                    </div>
-                ) : transactions.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-center">
-                        <FileText className="h-16 w-16 text-muted-foreground mb-4 opacity-30" />
-                        <h3 className="text-lg font-medium mb-2">No transactions found</h3>
-                        <p className="text-muted-foreground max-w-md">
-                            No transaction data is available for account {customerId} during the selected time period ({startDate} to {endDate}).
-                        </p>
-                    </div>
-                ) : (
-                    <>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-                            <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-md">
-                                <div className="text-sm text-muted-foreground">Total Transactions</div>
-                                <div className="text-2xl font-bold">{transactions.length}</div>
-                            </div>
-                            <div className="bg-green-50 dark:bg-green-950 p-4 rounded-md">
-                                <div className="text-sm text-muted-foreground">Credit Transactions</div>
-                                <div className="text-2xl font-bold text-green-600 dark:text-green-400">{creditCount} ({((creditCount / transactions.length) * 100).toFixed(0)}%)</div>
-                                <div className="text-sm">{formatCurrency(totalCreditAmount)}</div>
-                            </div>
-                            <div className="bg-red-50 dark:bg-red-950 p-4 rounded-md">
-                                <div className="text-sm text-muted-foreground">Debit Transactions</div>
-                                <div className="text-2xl font-bold text-red-600 dark:text-red-400">{debitCount} ({((debitCount / transactions.length) * 100).toFixed(0)}%)</div>
-                                <div className="text-sm">{formatCurrency(totalDebitAmount)}</div>
-                            </div>
-                            <div className="bg-purple-50 dark:bg-purple-950 p-4 rounded-md">
-                                <div className="text-sm text-muted-foreground">Net Flow</div>
-                                <div className={`text-2xl font-bold ${totalCreditAmount - totalDebitAmount >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                    {formatCurrency(totalCreditAmount - totalDebitAmount)}
-                                </div>
-                            </div>
+                    ) : error ? (
+                        <div className="p-4 text-red-500 bg-red-50 dark:bg-red-950 rounded-md">
+                            Error loading transaction details: {error}
                         </div>
-
-                        <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
-                            <div className="flex justify-between items-center mb-4">
-                                <TabsList>
-                                    <TabsTrigger value="all">All Transactions</TabsTrigger>
-                                    <TabsTrigger value="debit">Debits</TabsTrigger>
-                                    <TabsTrigger value="credit">Credits</TabsTrigger>
-                                </TabsList>
-                                <div className="flex gap-2">
-                                    <Button variant="outline" size="sm" onClick={exportToCSV}>
-                                        <Download className="h-4 w-4 mr-2" />
-                                        Export CSV
-                                    </Button>
-                                    <Button variant="outline" size="sm" onClick={generatePDFReport}>
-                                        <FileText className="h-4 w-4 mr-2" />
-                                        PDF Report
-                                    </Button>
+                    ) : transactions.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                            <FileText className="h-16 w-16 text-muted-foreground mb-4 opacity-30" />
+                            <h3 className="text-lg font-medium mb-2">No transactions found</h3>
+                            <p className="text-muted-foreground max-w-md">
+                                No transaction data is available for account {customerId} during the selected time period ({startDate} to {endDate}).
+                            </p>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                                <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-md">
+                                    <div className="text-sm text-muted-foreground">Total Transactions</div>
+                                    <div className="text-2xl font-bold">{transactions.length}</div>
+                                </div>
+                                <div className="bg-green-50 dark:bg-green-950 p-4 rounded-md">
+                                    <div className="text-sm text-muted-foreground">Credit Transactions</div>
+                                    <div className="text-2xl font-bold text-green-600 dark:text-green-400">{creditCount} ({((creditCount / transactions.length) * 100).toFixed(0)}%)</div>
+                                    <div className="text-sm">{formatCurrency(totalCreditAmount)}</div>
+                                </div>
+                                <div className="bg-red-50 dark:bg-red-950 p-4 rounded-md">
+                                    <div className="text-sm text-muted-foreground">Debit Transactions</div>
+                                    <div className="text-2xl font-bold text-red-600 dark:text-red-400">{debitCount} ({((debitCount / transactions.length) * 100).toFixed(0)}%)</div>
+                                    <div className="text-sm">{formatCurrency(totalDebitAmount)}</div>
+                                </div>
+                                <div className="bg-purple-50 dark:bg-purple-950 p-4 rounded-md">
+                                    <div className="text-sm text-muted-foreground">Net Flow</div>
+                                    <div className={`text-2xl font-bold ${totalCreditAmount - totalDebitAmount >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                        {formatCurrency(totalCreditAmount - totalDebitAmount)}
+                                    </div>
                                 </div>
                             </div>
 
-                            <TabsContent value="all" className="mt-0">
-                                <div className="border rounded-md">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead className="w-[180px]">Transaction Ref</TableHead>
-                                                <TableHead>Date/Time</TableHead>
-                                                <TableHead>Type</TableHead>
-                                                <TableHead className="text-right">Amount</TableHead>
-                                                <TableHead>Description</TableHead>
-                                                <TableHead>User ID</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {filteredTransactions.length > 0 ? (
-                                                filteredTransactions.map((txn) => (
-                                                    <TableRow key={txn.trnRefNo + txn.acEntrySrNo}>
-                                                        <TableCell className="font-mono text-xs">{txn.trnRefNo}</TableCell>
-                                                        <TableCell>{formatDate(txn.txnDtTime)}</TableCell>
-                                                        <TableCell>
-                                                            <Badge variant={txn.drcrInd === 'D' ? 'destructive' : 'default'}>
-                                                                {txn.drcrInd === 'D' ? 'Debit' : 'Credit'}
-                                                            </Badge>
-                                                        </TableCell>
-                                                        <TableCell className="text-right font-medium">
-                                                            {formatCurrency(txn.lcyAmount)}
-                                                        </TableCell>
-                                                        <TableCell className="max-w-[200px] truncate" title={txn.additionalText}>
-                                                            {txn.additionalText || 'N/A'}
-                                                        </TableCell>
-                                                        <TableCell>{txn.userId}</TableCell>
-                                                    </TableRow>
-                                                ))
-                                            ) : (
-                                                <TableRow>
-                                                    <TableCell colSpan={6} className="text-center py-4">
-                                                        No transactions found matching the current filter.
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
+                            <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+                                <div className="flex justify-between items-center mb-4">
+                                    <TabsList>
+                                        <TabsTrigger value="all">All Transactions</TabsTrigger>
+                                        <TabsTrigger value="debit">Debits</TabsTrigger>
+                                        <TabsTrigger value="credit">Credits</TabsTrigger>
+                                    </TabsList>
+                                    <div className="flex gap-2">
+                                        <Button variant="outline" size="sm" onClick={exportToCSV}>
+                                            <Download className="h-4 w-4 mr-2" />
+                                            Export CSV
+                                        </Button>
+                                        <Button variant="outline" size="sm" onClick={generatePDFReport}>
+                                            <FileText className="h-4 w-4 mr-2" />
+                                            PDF Report
+                                        </Button>
+                                    </div>
                                 </div>
-                            </TabsContent>
-                            
-                            <TabsContent value="debit" className="mt-0">
-                                <div className="border rounded-md">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead className="w-[180px]">Transaction Ref</TableHead>
-                                                <TableHead>Date/Time</TableHead>
-                                                <TableHead className="text-right">Amount</TableHead>
-                                                <TableHead>Description</TableHead>
-                                                <TableHead>User ID</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {filteredTransactions.length > 0 ? (
-                                                filteredTransactions.map((txn) => (
-                                                    <TableRow key={txn.trnRefNo + txn.acEntrySrNo}>
-                                                        <TableCell className="font-mono text-xs">{txn.trnRefNo}</TableCell>
-                                                        <TableCell>{formatDate(txn.txnDtTime)}</TableCell>
-                                                        <TableCell className="text-right font-medium">
-                                                            {formatCurrency(txn.lcyAmount)}
-                                                        </TableCell>
-                                                        <TableCell className="max-w-[200px] truncate" title={txn.additionalText}>
-                                                            {txn.additionalText || 'N/A'}
-                                                        </TableCell>
-                                                        <TableCell>{txn.userId}</TableCell>
-                                                    </TableRow>
-                                                ))
-                                            ) : (
-                                                <TableRow>
-                                                    <TableCell colSpan={5} className="text-center py-4">
-                                                        No debit transactions found.
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            </TabsContent>
-                            
-                            <TabsContent value="credit" className="mt-0">
-                                <div className="border rounded-md">
-                                    <Table>
-                                        <TableHeader>
-                                            <TableRow>
-                                                <TableHead className="w-[180px]">Transaction Ref</TableHead>
-                                                <TableHead>Date/Time</TableHead>
-                                                <TableHead className="text-right">Amount</TableHead>
-                                                <TableHead>Description</TableHead>
-                                                <TableHead>User ID</TableHead>
-                                            </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {filteredTransactions.length > 0 ? (
-                                                filteredTransactions.map((txn) => (
-                                                    <TableRow key={txn.trnRefNo + txn.acEntrySrNo}>
-                                                        <TableCell className="font-mono text-xs">{txn.trnRefNo}</TableCell>
-                                                        <TableCell>{formatDate(txn.txnDtTime)}</TableCell>
-                                                        <TableCell className="text-right font-medium">
-                                                            {formatCurrency(txn.lcyAmount)}
-                                                        </TableCell>
-                                                        <TableCell className="max-w-[200px] truncate" title={txn.additionalText}>
-                                                            {txn.additionalText || 'N/A'}
-                                                        </TableCell>
-                                                        <TableCell>{txn.userId}</TableCell>
-                                                    </TableRow>
-                                                ))
-                                            ) : (
-                                                <TableRow>
-                                                    <TableCell colSpan={5} className="text-center py-4">
-                                                        No credit transactions found.
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            </TabsContent>
-                        </Tabs>
-                    </>
-                )}
 
-                <DialogFooter>
-                    <Button variant="outline" onClick={onClose}>Close</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                                <TabsContent value="all" className="mt-0">
+                                    <div className="border rounded-md">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="w-[180px]">Transaction Ref</TableHead>
+                                                    <TableHead>Date/Time</TableHead>
+                                                    <TableHead>Type</TableHead>
+                                                    <TableHead className="text-right">Amount</TableHead>
+                                                    <TableHead>Description</TableHead>
+                                                    <TableHead>User ID</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {filteredTransactions.length > 0 ? (
+                                                    filteredTransactions.map((txn) => (
+                                                        <TableRow key={txn.trnRefNo + txn.acEntrySrNo}>
+                                                            <TableCell className="font-mono text-xs">{txn.trnRefNo}</TableCell>
+                                                            <TableCell>{formatDate(txn.txnDtTime)}</TableCell>
+                                                            <TableCell>
+                                                                <Badge variant={txn.drcrInd === 'D' ? 'destructive' : 'default'}>
+                                                                    {txn.drcrInd === 'D' ? 'Debit' : 'Credit'}
+                                                                </Badge>
+                                                            </TableCell>
+                                                            <TableCell className="text-right font-medium">
+                                                                {formatCurrency(txn.lcyAmount)}
+                                                            </TableCell>
+                                                            <TableCell className="max-w-[200px] truncate" title={txn.additionalText}>
+                                                                {txn.additionalText || 'N/A'}
+                                                            </TableCell>
+                                                            <TableCell>{txn.userId}</TableCell>
+                                                        </TableRow>
+                                                    ))
+                                                ) : (
+                                                    <TableRow>
+                                                        <TableCell colSpan={6} className="text-center py-4">
+                                                            No transactions found matching the current filter.
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </TabsContent>
+                                
+                                <TabsContent value="debit" className="mt-0">
+                                    <div className="border rounded-md">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="w-[180px]">Transaction Ref</TableHead>
+                                                    <TableHead>Date/Time</TableHead>
+                                                    <TableHead className="text-right">Amount</TableHead>
+                                                    <TableHead>Description</TableHead>
+                                                    <TableHead>User ID</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {filteredTransactions.length > 0 ? (
+                                                    filteredTransactions.map((txn) => (
+                                                        <TableRow key={txn.trnRefNo + txn.acEntrySrNo}>
+                                                            <TableCell className="font-mono text-xs">{txn.trnRefNo}</TableCell>
+                                                            <TableCell>{formatDate(txn.txnDtTime)}</TableCell>
+                                                            <TableCell className="text-right font-medium">
+                                                                {formatCurrency(txn.lcyAmount)}
+                                                            </TableCell>
+                                                            <TableCell className="max-w-[200px] truncate" title={txn.additionalText}>
+                                                                {txn.additionalText || 'N/A'}
+                                                            </TableCell>
+                                                            <TableCell>{txn.userId}</TableCell>
+                                                        </TableRow>
+                                                    ))
+                                                ) : (
+                                                    <TableRow>
+                                                        <TableCell colSpan={5} className="text-center py-4">
+                                                            No debit transactions found.
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </TabsContent>
+                                
+                                <TabsContent value="credit" className="mt-0">
+                                    <div className="border rounded-md">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead className="w-[180px]">Transaction Ref</TableHead>
+                                                    <TableHead>Date/Time</TableHead>
+                                                    <TableHead className="text-right">Amount</TableHead>
+                                                    <TableHead>Description</TableHead>
+                                                    <TableHead>User ID</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {filteredTransactions.length > 0 ? (
+                                                    filteredTransactions.map((txn) => (
+                                                        <TableRow key={txn.trnRefNo + txn.acEntrySrNo}>
+                                                            <TableCell className="font-mono text-xs">{txn.trnRefNo}</TableCell>
+                                                            <TableCell>{formatDate(txn.txnDtTime)}</TableCell>
+                                                            <TableCell className="text-right font-medium">
+                                                                {formatCurrency(txn.lcyAmount)}
+                                                            </TableCell>
+                                                            <TableCell className="max-w-[200px] truncate" title={txn.additionalText}>
+                                                                {txn.additionalText || 'N/A'}
+                                                            </TableCell>
+                                                            <TableCell>{txn.userId}</TableCell>
+                                                        </TableRow>
+                                                    ))
+                                                ) : (
+                                                    <TableRow>
+                                                        <TableCell colSpan={5} className="text-center py-4">
+                                                            No credit transactions found.
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </TabsContent>
+                            </Tabs>
+                        </>
+                    )}
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={onClose}>Close</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+            <Customer360Modal
+                isOpen={isCustomer360Open}
+                onClose={() => setIsCustomer360Open(false)}
+                accountNumber={customerId}
+            />
+        </Fragment>
     );
 };
 
