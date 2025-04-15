@@ -27,6 +27,12 @@ import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { useAnalytics } from '@/hooks/useAnalytics';
+import { useATMAnalytics } from '@/hooks/useATMAnalytics';
+import { useAccessPayAnalytics } from '@/hooks/useAccessPayAnalytics';
+import { useAgencyBankingAnalytics } from '@/hooks/useAgencyBankingAnalytics';
+import { useRIBAnalytics } from '@/hooks/useRIBAnalytics';
+import { useUSSDAnalytics } from '@/hooks/useUSSDAnalytics';
 
 interface Transaction {
   id: string;
@@ -50,6 +56,7 @@ interface AnalyticsData {
     hour: string;
     count: number;
   }[];
+  rawData?: any[]; // For storing raw API response data
 }
 
 export default function ReportsPage() {
@@ -60,107 +67,139 @@ export default function ReportsPage() {
     from: undefined,
     to: undefined,
   });
-  const [channel, setChannel] = useState<string>('all');
+  const [channel, setChannel] = useState<string>('TENGA');
   const [reportType, setReportType] = useState<string>('transactions');
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData>({
-    totalTransactions: 0,
-    totalVolume: 0,
-    successRate: 0,
-    channelBreakdown: [],
-    hourlyTrends: []
+
+  // Format dates for API calls
+  const startDate = dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
+  const endDate = dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
+
+  // Use the appropriate hook based on selected channel
+  const { 
+    loading: tengaLoading, 
+    error: tengaError,
+    successFailureData,
+    channelMetrics,
+    transactionMetrics,
+    refetch: refetchTenga
+  } = useAnalytics({
+    startDate,
+    endDate,
+    channel: 'TENGA'
   });
 
-  // Mock data generation (replace with actual API calls)
-  const generateMockData = () => {
-    const channels = ['ATM', 'POS', 'Mobile', 'Internet'];
-    const mockTransactions: Transaction[] = [];
-    const startDate = dateRange.from || new Date();
-    const endDate = dateRange.to || new Date();
+  const {
+    data: atmData,
+    isLoading: atmLoading,
+    error: atmError
+  } = useATMAnalytics({
+    startDate,
+    endDate
+  });
 
-    // Generate mock transactions
-    for (let i = 0; i < 1000; i++) {
-      mockTransactions.push({
-        id: `TXN${i}`,
-        timestamp: new Date(
-          startDate.getTime() + Math.random() * (endDate.getTime() - startDate.getTime())
-        ),
-        channel: channels[Math.floor(Math.random() * channels.length)],
-        amount: Math.floor(Math.random() * 10000),
-        status: Math.random() > 0.05 ? 'SUCCESS' : 'FAILED',
-        type: Math.random() > 0.5 ? 'PURCHASE' : 'WITHDRAWAL'
-      });
+  const {
+    data: accessPayData,
+    isLoading: accessPayLoading,
+    error: accessPayError
+  } = useAccessPayAnalytics({
+    startDate,
+    endDate
+  });
+
+  const {
+    data: agencyBankingData,
+    isLoading: agencyBankingLoading,
+    error: agencyBankingError
+  } = useAgencyBankingAnalytics({
+    startDate,
+    endDate
+  });
+
+  const {
+    data: ribData,
+    isLoading: ribLoading,
+    error: ribError
+  } = useRIBAnalytics({
+    startDate,
+    endDate
+  });
+
+  const {
+    data: ussdData,
+    isLoading: ussdLoading,
+    error: ussdError
+  } = useUSSDAnalytics({
+    startDate,
+    endDate
+  });
+
+  const loading = tengaLoading || atmLoading || accessPayLoading || agencyBankingLoading || ribLoading || ussdLoading;
+  const error = tengaError || atmError || accessPayError || agencyBankingError || ribError || ussdError;
+
+  // Transform hook data into exportable format
+  const getExportData = () => {
+    switch (channel) {
+      case 'ATM':
+        return atmData?.detailReport?.map(item => ({
+          failed_transactions: item.failed_transactions,
+          success_transactions: item.success_transaction,
+          total_transactions: item.total_transactions
+        })) || [];
+      case 'TENGA':
+      default:
+        return transactionMetrics.map(item => ({
+          type: item.type,
+          count: item.count,
+          volume: item.volume,
+          success_rate: item.successRate
+        }));
     }
-
-    // Calculate analytics
-    const filtered = channel === 'all' 
-      ? mockTransactions 
-      : mockTransactions.filter(t => t.channel === channel);
-
-    const analytics: AnalyticsData = {
-      totalTransactions: filtered.length,
-      totalVolume: filtered.reduce((sum, t) => sum + t.amount, 0),
-      successRate: filtered.filter(t => t.status === 'SUCCESS').length / filtered.length * 100,
-      channelBreakdown: channels.map(ch => ({
-        channel: ch,
-        count: filtered.filter(t => t.channel === ch).length,
-        volume: filtered.filter(t => t.channel === ch)
-          .reduce((sum, t) => sum + t.amount, 0)
-      })),
-      hourlyTrends: Array.from({ length: 24 }, (_, hour) => ({
-        hour: `${hour}:00`,
-        count: filtered.filter(t => t.timestamp.getHours() === hour).length
-      }))
-    };
-
-    setAnalyticsData(analytics);
-    return filtered;
   };
 
   const exportToCSV = () => {
-    const data = generateMockData();
-    const ws = XLSX.utils.json_to_sheet(data.map(t => ({
-      ...t,
-      timestamp: format(t.timestamp, 'yyyy-MM-dd HH:mm:ss')
-    })));
+    const data = getExportData();
+    const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
-    XLSX.writeFile(wb, `transactions_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    XLSX.utils.book_append_sheet(wb, ws, 'Analytics');
+    XLSX.writeFile(wb, `${channel.toLowerCase()}_analytics_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
   };
 
   const exportToPDF = () => {
     const doc = new jsPDF();
-    const data = generateMockData();
+    const data = getExportData();
 
     // Add title
     doc.setFontSize(16);
-    doc.text('Transaction Report', 14, 20);
+    doc.text(`${channel} Analytics Report`, 14, 20);
 
     // Add filters info
     doc.setFontSize(10);
-    doc.text(`Date Range: ${dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : 'All'} to ${dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : 'All'}`, 14, 30);
-    doc.text(`Channel: ${channel}`, 14, 35);
+    doc.text(`Date Range: ${startDate} to ${endDate}`, 14, 30);
 
-    // Add summary
-    doc.text(`Total Transactions: ${analyticsData.totalTransactions}`, 14, 45);
-    doc.text(`Total Volume: $${analyticsData.totalVolume.toLocaleString()}`, 14, 50);
-    doc.text(`Success Rate: ${analyticsData.successRate.toFixed(2)}%`, 14, 55);
+    // Add summary based on channel
+    if (channel === 'ATM') {
+      doc.text(`Total Transactions: ${atmData?.total || 0}`, 14, 40);
+      doc.text(`Success Rate: ${atmData?.percentSuccess || 0}%`, 14, 45);
+      doc.text(`Failure Rate: ${atmData?.percentFailed || 0}%`, 14, 50);
+    } else {
+      const totalTransactions = transactionMetrics.reduce((sum, item) => sum + item.count, 0);
+      const avgSuccessRate = transactionMetrics.reduce((sum, item) => sum + item.successRate, 0) / transactionMetrics.length;
+      
+      doc.text(`Total Transactions: ${totalTransactions}`, 14, 40);
+      doc.text(`Average Success Rate: ${avgSuccessRate.toFixed(2)}%`, 14, 45);
+    }
 
-    // Add transaction table
-    const tableData = data.slice(0, 20).map(t => [
-      format(t.timestamp, 'yyyy-MM-dd HH:mm:ss'),
-      t.channel,
-      `$${t.amount}`,
-      t.status,
-      t.type
-    ]);
+    // Add data table
+    const tableData = data.map((item: any) => Object.values(item));
+    const headers = Object.keys(data[0] || {});
 
     (doc as any).autoTable({
-      head: [['Timestamp', 'Channel', 'Amount', 'Status', 'Type']],
+      head: [headers],
       body: tableData,
-      startY: 65
+      startY: 60
     });
 
-    doc.save(`report_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+    doc.save(`${channel.toLowerCase()}_report_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
   };
 
   return (
@@ -199,71 +238,36 @@ export default function ReportsPage() {
                   <SelectValue placeholder="Select Channel" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Channels</SelectItem>
+                  <SelectItem value="TENGA">TENGA</SelectItem>
                   <SelectItem value="ATM">ATM</SelectItem>
-                  <SelectItem value="POS">POS</SelectItem>
-                  <SelectItem value="Mobile">Mobile</SelectItem>
-                  <SelectItem value="Internet">Internet</SelectItem>
+                  <SelectItem value="RIB">RIB</SelectItem>
+                  <SelectItem value="USSD">USSD</SelectItem>
+                  <SelectItem value="AGENCY">Agency Banking</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={reportType} onValueChange={setReportType}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Report Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="transactions">Transactions</SelectItem>
-                  <SelectItem value="volume">Volume</SelectItem>
-                  <SelectItem value="success">Success Rate</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button onClick={() => generateMockData()}>
-                Generate Report
+              <Button onClick={channel === 'TENGA' ? refetchTenga : undefined}>
+                Refresh Data
               </Button>
             </div>
           </Card>
 
-          {/* Summary Cards */}
-          <Card className="col-span-4 p-4">
-            <h3 className="text-lg font-semibold mb-2">Total Transactions</h3>
-            <p className="text-3xl font-bold">{analyticsData.totalTransactions.toLocaleString()}</p>
-          </Card>
-          <Card className="col-span-4 p-4">
-            <h3 className="text-lg font-semibold mb-2">Total Volume</h3>
-            <p className="text-3xl font-bold">${analyticsData.totalVolume.toLocaleString()}</p>
-          </Card>
-          <Card className="col-span-4 p-4">
-            <h3 className="text-lg font-semibold mb-2">Success Rate</h3>
-            <p className="text-3xl font-bold">{analyticsData.successRate.toFixed(2)}%</p>
-          </Card>
+          {/* Error Message */}
+          {error && (
+            <div className="col-span-12">
+              <div className="bg-red-50 text-red-600 p-4 rounded-md">
+                {error.message}
+              </div>
+            </div>
+          )}
 
-          {/* Charts */}
-          <Card className="col-span-6 p-4">
-            <h3 className="text-lg font-semibold mb-4">Channel Breakdown</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={analyticsData.channelBreakdown}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="channel" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="count" fill="#8884d8" name="Transactions" />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-
-          <Card className="col-span-6 p-4">
-            <h3 className="text-lg font-semibold mb-4">Hourly Trends</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={analyticsData.hourlyTrends}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="hour" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="count" stroke="#8884d8" name="Transactions" />
-              </LineChart>
-            </ResponsiveContainer>
-          </Card>
+          {/* Loading State */}
+          {loading && (
+            <div className="col-span-12">
+              <div className="bg-blue-50 text-blue-600 p-4 rounded-md">
+                Loading data...
+              </div>
+            </div>
+          )}
         </div>
       </LayoutBody>
     </Layout>

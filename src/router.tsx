@@ -3,6 +3,7 @@ import GeneralError from './pages/errors/general-error'
 import NotFoundError from './pages/errors/not-found-error'
 import MaintenanceError from './pages/errors/maintenance-error'
 import React, { Suspense } from 'react'
+import AiAssistant from './pages/ai-assistant'
 
 // Add a loading component
 const Loading = () => <div>Loading...</div>
@@ -106,7 +107,7 @@ const router = createBrowserRouter(
           path: 'ai-assistant',
           element: (
             <Suspense fallback={<Loading />}>
-              <Workflows />
+              < AiAssistant />
             </Suspense>
           ),
         },

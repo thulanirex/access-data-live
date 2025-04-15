@@ -13,6 +13,7 @@ import { RIBTab } from './components/rib/RIBTab'
 import ATMTab from './components/atm/ATMTab'
 import AgencyBankingTab from './components/agency/AgencyBankingTab'
 import USSD360Tab from './components/ussd360/USSD360Tab'
+import FraudAnalyticsTab from './components/fraud/FraudAnalyticsTab'
 
 export default function Dashboard() {
 
@@ -50,6 +51,7 @@ export default function Dashboard() {
               <TabsTrigger value='tenga'>Tenga</TabsTrigger>
               <TabsTrigger value='atm'>ATM Transactions</TabsTrigger>
               <TabsTrigger value='accesspay'>Access Pay</TabsTrigger>
+              <TabsTrigger value='fraud'>Fraud Analytics</TabsTrigger>
             </TabsList>
 
           </div>
@@ -108,6 +110,9 @@ export default function Dashboard() {
           </TabsContent>
           <TabsContent value='agency'>
             < AgencyBankingTab />
+          </TabsContent>
+          <TabsContent value='fraud'>
+            <FraudAnalyticsTab />
           </TabsContent>
 
         </Tabs>
