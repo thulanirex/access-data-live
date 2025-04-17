@@ -40,7 +40,7 @@ export default function Dashboard() {
         >
           <div className='w-full pb-2'>
             <TabsList className='bg-custom-orange text-white'>
-              <TabsTrigger value='overview'>Overview</TabsTrigger>
+              {/* <TabsTrigger value='overview'>Overview</TabsTrigger>
               <TabsTrigger value='ussd'>USSD *801#</TabsTrigger>
               <TabsTrigger value='ussd202'>USSD *202#</TabsTrigger>
               <TabsTrigger value='ussd360'>USSD *360#</TabsTrigger>
@@ -50,7 +50,7 @@ export default function Dashboard() {
               <TabsTrigger value='rib'>Retail Internet Banking</TabsTrigger>
               <TabsTrigger value='tenga'>Tenga</TabsTrigger>
               <TabsTrigger value='atm'>ATM Transactions</TabsTrigger>
-              <TabsTrigger value='accesspay'>Access Pay</TabsTrigger>
+              <TabsTrigger value='accesspay'>Access Pay</TabsTrigger> */}
               <TabsTrigger value='fraud'>Fraud Analytics</TabsTrigger>
             </TabsList>
 
@@ -81,7 +81,7 @@ export default function Dashboard() {
           
             </div>
           </TabsContent> */}
-          <TabsContent value='mobile-banking'>
+          {/* <TabsContent value='mobile-banking'>
             <MobileTab />
           </TabsContent>
           <TabsContent value='accesspay'>
@@ -110,7 +110,7 @@ export default function Dashboard() {
           </TabsContent>
           <TabsContent value='agency'>
             < AgencyBankingTab />
-          </TabsContent>
+          </TabsContent> */}
           <TabsContent value='fraud'>
             <FraudAnalyticsTab />
           </TabsContent>

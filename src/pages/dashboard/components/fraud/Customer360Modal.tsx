@@ -16,10 +16,11 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Loader2, User, CreditCard } from "lucide-react";
+import { Loader2, User, CreditCard, Smartphone } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { format } from 'date-fns';
+import MobileProfileTab, { MobileProfile } from './MobileProfileTab';
 
 interface CustomerAccount {
     CIF_ID: string;
@@ -54,6 +55,9 @@ const Customer360Modal: React.FC<Customer360ModalProps> = ({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [customerData, setCustomerData] = useState<CustomerAccount[]>([]);
+    const [mobileProfile, setMobileProfile] = useState<MobileProfile | null>(null);
+    const [mobileProfileLoading, setMobileProfileLoading] = useState(false);
+    const [mobileProfileError, setMobileProfileError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState('profile');
 
     useEffect(() => {
@@ -62,13 +66,20 @@ const Customer360Modal: React.FC<Customer360ModalProps> = ({
         }
     }, [isOpen, accountNumber]);
 
+    useEffect(() => {
+        if (isOpen && customerData.length > 0) {
+            // Once we have customer data, fetch mobile profile using CIF_ID
+            fetchMobileProfile(customerData[0].CIF_ID);
+        }
+    }, [isOpen, customerData]);
+
     const fetchCustomerDetails = async () => {
         try {
             setLoading(true);
             setError(null);
             
             // Clean the account number (remove any ellipsis)
-            const cleanAccountNumber = accountNumber.replace(/…|\.{3}/g, '');
+            const cleanAccountNumber = accountNumber.replace(/…|\.\.\./g, '');
             
             const apiUrl = `http://localhost:8944/api/accounts/signature-details?accountNo=${cleanAccountNumber}`;
             console.log('Fetching customer details from:', apiUrl);
@@ -87,6 +98,31 @@ const Customer360Modal: React.FC<Customer360ModalProps> = ({
             setError(err instanceof Error ? err.message : 'Unknown error occurred');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchMobileProfile = async (cifId: string) => {
+        try {
+            setMobileProfileLoading(true);
+            setMobileProfileError(null);
+            
+            const apiUrl = `http://localhost:8944/api/customers/mobile-profile?cif=${cifId}`;
+            console.log('Fetching mobile profile from:', apiUrl);
+            
+            const response = await fetch(apiUrl);
+            
+            if (!response.ok) {
+                throw new Error(`API request failed with status ${response.status}`);
+            }
+            
+            const data = await response.json();
+            setMobileProfile(data);
+            console.log('Mobile profile loaded:', data);
+        } catch (err) {
+            console.error('Error fetching mobile profile:', err);
+            setMobileProfileError(err instanceof Error ? err.message : 'Unknown error occurred');
+        } finally {
+            setMobileProfileLoading(false);
         }
     };
 
@@ -150,7 +186,7 @@ const Customer360Modal: React.FC<Customer360ModalProps> = ({
                     </div>
                 ) : customerData.length > 0 ? (
                     <Tabs defaultValue="profile" value={activeTab} onValueChange={setActiveTab}>
-                        <TabsList className="grid grid-cols-3 mb-4">
+                        <TabsList className="grid grid-cols-4 mb-4">
                             <TabsTrigger value="profile">
                                 <User className="h-4 w-4 mr-2" />
                                 Profile
@@ -168,6 +204,10 @@ const Customer360Modal: React.FC<Customer360ModalProps> = ({
                                     <path d="M16 18l-4-6"></path>
                                 </svg>
                                 Signature
+                            </TabsTrigger>
+                            <TabsTrigger value="mobile">
+                                <Smartphone className="h-4 w-4 mr-2" />
+                                Mobile Banking
                             </TabsTrigger>
                         </TabsList>
 
@@ -343,6 +383,14 @@ const Customer360Modal: React.FC<Customer360ModalProps> = ({
                                     ))}
                                 </div>
                             </div>
+                        </TabsContent>
+
+                        <TabsContent value="mobile">
+                            <MobileProfileTab 
+                                mobileProfile={mobileProfile}
+                                loading={mobileProfileLoading}
+                                error={mobileProfileError}
+                            />
                         </TabsContent>
                     </Tabs>
                 ) : (

@@ -18,9 +18,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, AlertTriangle, Download, FileText, User } from "lucide-react";
+import { Loader2, AlertTriangle, Download, FileText, User, ExternalLink } from "lucide-react";
 import { format } from 'date-fns';
 import Customer360Modal from './Customer360Modal';
+import TransactionJourneyModal from './TransactionJourneyModal';
 
 export interface TransactionDetail {
     module: string;
@@ -74,6 +75,8 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
     const [formattedStartDate, setFormattedStartDate] = useState('');
     const [formattedEndDate, setFormattedEndDate] = useState('');
     const [isCustomer360Open, setIsCustomer360Open] = useState(false);
+    const [selectedTransactionRef, setSelectedTransactionRef] = useState<string | null>(null);
+    const [isTransactionJourneyOpen, setIsTransactionJourneyOpen] = useState(false);
 
     useEffect(() => {
         if (isOpen && customerId) {
@@ -256,6 +259,12 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
         alert('PDF report generation would be implemented here with a library like jsPDF');
     };
 
+    // Handle click on transaction reference number
+    const handleTransactionRefClick = (refNo: string) => {
+        setSelectedTransactionRef(refNo);
+        setIsTransactionJourneyOpen(true);
+    };
+
     return (
         <Fragment>
             <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -365,7 +374,15 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
                                                 {filteredTransactions.length > 0 ? (
                                                     filteredTransactions.map((txn) => (
                                                         <TableRow key={txn.trnRefNo + txn.acEntrySrNo}>
-                                                            <TableCell className="font-mono text-xs">{txn.trnRefNo}</TableCell>
+                                                            <TableCell className="font-mono text-xs">
+                                                    <button 
+                                                        onClick={() => handleTransactionRefClick(txn.trnRefNo)}
+                                                        className="flex items-center hover:text-primary hover:underline"
+                                                    >
+                                                        {txn.trnRefNo}
+                                                        <ExternalLink className="h-3 w-3 ml-1" />
+                                                    </button>
+                                                </TableCell>
                                                             <TableCell>{formatDate(txn.txnDtTime)}</TableCell>
                                                             <TableCell>
                                                                 <Badge variant={txn.drcrInd === 'D' ? 'destructive' : 'default'}>
@@ -409,7 +426,15 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
                                                 {filteredTransactions.length > 0 ? (
                                                     filteredTransactions.map((txn) => (
                                                         <TableRow key={txn.trnRefNo + txn.acEntrySrNo}>
-                                                            <TableCell className="font-mono text-xs">{txn.trnRefNo}</TableCell>
+                                                            <TableCell className="font-mono text-xs">
+                                                    <button 
+                                                        onClick={() => handleTransactionRefClick(txn.trnRefNo)}
+                                                        className="flex items-center hover:text-primary hover:underline"
+                                                    >
+                                                        {txn.trnRefNo}
+                                                        <ExternalLink className="h-3 w-3 ml-1" />
+                                                    </button>
+                                                </TableCell>
                                                             <TableCell>{formatDate(txn.txnDtTime)}</TableCell>
                                                             <TableCell className="text-right font-medium">
                                                                 {formatCurrency(txn.lcyAmount)}
@@ -448,7 +473,15 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
                                                 {filteredTransactions.length > 0 ? (
                                                     filteredTransactions.map((txn) => (
                                                         <TableRow key={txn.trnRefNo + txn.acEntrySrNo}>
-                                                            <TableCell className="font-mono text-xs">{txn.trnRefNo}</TableCell>
+                                                            <TableCell className="font-mono text-xs">
+                                                    <button 
+                                                        onClick={() => handleTransactionRefClick(txn.trnRefNo)}
+                                                        className="flex items-center hover:text-primary hover:underline"
+                                                    >
+                                                        {txn.trnRefNo}
+                                                        <ExternalLink className="h-3 w-3 ml-1" />
+                                                    </button>
+                                                </TableCell>
                                                             <TableCell>{formatDate(txn.txnDtTime)}</TableCell>
                                                             <TableCell className="text-right font-medium">
                                                                 {formatCurrency(txn.lcyAmount)}
@@ -483,6 +516,11 @@ const TransactionDetailsModal: React.FC<TransactionDetailsModalProps> = ({
                 isOpen={isCustomer360Open}
                 onClose={() => setIsCustomer360Open(false)}
                 accountNumber={customerId}
+            />
+            <TransactionJourneyModal
+                isOpen={isTransactionJourneyOpen}
+                onClose={() => setIsTransactionJourneyOpen(false)}
+                referenceNumber={selectedTransactionRef || ''}
             />
         </Fragment>
     );

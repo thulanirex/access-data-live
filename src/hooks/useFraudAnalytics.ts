@@ -406,6 +406,8 @@ export function useFraudAnalytics({
       });
     });
 
+  
+
     return {
       transactions,
       flags,
